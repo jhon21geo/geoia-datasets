@@ -400,14 +400,14 @@
         },
         scales: {
           x: {
-            title: { display: true, text: "Fe %", color: "#94a3b8", font: { size: 10 } },
-            ticks: { color: "#94a3b8", font: { size: 9 } },
-            grid: { color: "rgba(255,255,255,.06)" },
+            title: { display: true, text: "Fe %", color: "#475569", font: { size: 10 } },
+            ticks: { color: "#475569", font: { size: 9 } },
+            grid: { color: "rgba(15, 23, 42, .08)" },
           },
           y: {
-            title: { display: true, text: "Cu ppm", color: "#94a3b8", font: { size: 10 } },
-            ticks: { color: "#94a3b8", font: { size: 9 } },
-            grid: { color: "rgba(255,255,255,.06)" },
+            title: { display: true, text: "Cu ppm", color: "#475569", font: { size: 10 } },
+            ticks: { color: "#475569", font: { size: 9 } },
+            grid: { color: "rgba(15, 23, 42, .08)" },
           },
         },
       },
@@ -651,6 +651,9 @@
         if (target && scroller) {
           scroller.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
         }
+        if (id === "sec-crossplot" && crossplot) {
+          setTimeout(function () { crossplot.resize(); }, 200);
+        }
       });
     });
     const toggle = document.getElementById("menu-toggle");
@@ -665,8 +668,14 @@
   map.on("click", function (e) {
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
-    const fav = gridMeta ? sampleGrid(gridMeta.fav, lat, lon) : 0;
-    const clay = gridMeta ? sampleGrid(gridMeta.clay, lat, lon) * 3.2 : 0;
+    const inside =
+      gridMeta &&
+      lat >= gridMeta.south &&
+      lat <= gridMeta.north &&
+      lon >= gridMeta.west &&
+      lon <= gridMeta.east;
+    const fav = inside ? sampleGrid(gridMeta.fav, lat, lon) : 0;
+    const clay = inside ? sampleGrid(gridMeta.clay, lat, lon) * 3.2 : 0;
     const dist = nearestLineamentMeters(lat, lon);
     setPointPanel(lat, lon, fav, clay, dist);
   });
