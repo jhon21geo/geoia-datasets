@@ -332,13 +332,14 @@ aside.sidebar {
 #crossplot { width: 100% !important; height: 180px !important; }
 
 .sidebar-footer {
-  padding: 12px 14px 14px;
+  padding: 10px 14px 12px;
   border-top: 1px solid rgba(255,255,255,.08);
   background: rgba(0,0,0,.18);
+  flex-shrink: 0;
 }
 .comment-box {
   width: 100%;
-  min-height: 68px;
+  min-height: 52px;
   resize: vertical;
   background: rgba(255,255,255,.06);
   color: #e8edf7;

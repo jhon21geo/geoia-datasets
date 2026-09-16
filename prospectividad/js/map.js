@@ -143,10 +143,9 @@
     attributionControl: true,
   }).setView(CENTER, 8);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    maxZoom: 18,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO',
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
 
   const layers = {
@@ -176,11 +175,15 @@
   }
 
   function sampleGrid(grid, lat, lon) {
-    if (!gridMeta) return 0;
+    if (!gridMeta || !grid) return 0;
     const { south, north, west, east, rows, cols } = gridMeta;
-    const u = (lon - west) / (east - west);
-    const v = (north - lat) / (north - south);
-    if (u < 0 || u > 1 || v < 0 || v > 1) return 0;
+    if (lat < south || lat > north || lon < west || lon > east) return 0;
+    const spanX = east - west;
+    const spanY = north - south;
+    if (!spanX || !spanY) return 0;
+    const u = (lon - west) / spanX;
+    const v = (north - lat) / spanY;
+    if (!(u >= 0 && u <= 1 && v >= 0 && v <= 1)) return 0;
     const c = u * (cols - 1);
     const r = v * (rows - 1);
     const c0 = Math.floor(c);
@@ -644,7 +647,10 @@
         btn.classList.add("active");
         const id = btn.getAttribute("data-scroll");
         const target = document.getElementById(id);
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        const scroller = document.querySelector(".sidebar-scroll");
+        if (target && scroller) {
+          scroller.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
+        }
       });
     });
     const toggle = document.getElementById("menu-toggle");
