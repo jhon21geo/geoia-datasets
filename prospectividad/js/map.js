@@ -163,7 +163,6 @@
   let gridMeta = null;
   let samples = [];
   let lineaments = [];
-  let crossplot = null;
   let tsMode = "all";
 
   function setPointPanel(lat, lon, fav, clay, distM) {
@@ -372,46 +371,61 @@
 
   function drawCrossplot(points) {
     const canvas = document.getElementById("crossplot");
-    if (!canvas || typeof Chart === "undefined") return;
-    const data = points
-      .filter(function (p) { return p.Cu != null && p.Fe != null; })
-      .map(function (p) {
-        return { x: p.Fe, y: p.Cu, r: 3 };
-      });
-    if (crossplot) crossplot.destroy();
-    crossplot = new Chart(canvas.getContext("2d"), {
-      type: "scatter",
-      data: {
-        datasets: [
-          {
-            label: "Fe % vs Cu ppm",
-            data: data,
-            backgroundColor: "rgba(37, 99, 235, 0.55)",
-            borderColor: "rgba(37, 99, 235, 0.9)",
-            pointRadius: 3,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-        },
-        scales: {
-          x: {
-            title: { display: true, text: "Fe %", color: "#475569", font: { size: 10 } },
-            ticks: { color: "#475569", font: { size: 9 } },
-            grid: { color: "rgba(15, 23, 42, .08)" },
-          },
-          y: {
-            title: { display: true, text: "Cu ppm", color: "#475569", font: { size: 10 } },
-            ticks: { color: "#475569", font: { size: 9 } },
-            grid: { color: "rgba(15, 23, 42, .08)" },
-          },
-        },
-      },
+    if (!canvas) return;
+    const data = points.filter(function (p) {
+      return p.Cu != null && p.Fe != null && isFinite(p.Cu) && isFinite(p.Fe);
     });
+    const wrap = canvas.parentElement;
+    const w = Math.max(200, Math.floor((wrap && wrap.clientWidth) || 220));
+    const h = 176;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(0, 0, w, h);
+    const pad = { l: 36, r: 10, t: 12, b: 28 };
+    const iw = w - pad.l - pad.r;
+    const ih = h - pad.t - pad.b;
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.l, pad.t, iw, ih);
+    if (!data.length) {
+      ctx.fillStyle = "#64748b";
+      ctx.font = "11px Inter, sans-serif";
+      ctx.fillText("Sin pares Fe–Cu", pad.l + 8, pad.t + 20);
+      return;
+    }
+    const xs = data.map(function (d) { return d.Fe; });
+    const ys = data.map(function (d) { return d.Cu; });
+    const xMin = 0;
+    const xMax = Math.max(1, percentile(xs, 0.98) * 1.05);
+    const yMax = Math.max(1, percentile(ys, 0.98) * 1.05);
+    ctx.fillStyle = "#475569";
+    ctx.font = "10px Inter, sans-serif";
+    ctx.fillText("Fe %", pad.l + iw / 2 - 10, h - 8);
+    ctx.save();
+    ctx.translate(12, pad.t + ih / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Cu ppm", 0, 0);
+    ctx.restore();
+    ctx.fillStyle = "rgba(37, 99, 235, 0.55)";
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.95)";
+    data.forEach(function (d) {
+      const x = pad.l + (clamp01(d.Fe / xMax) * iw);
+      const y = pad.t + ih - clamp01(d.Cu / yMax) * ih;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = "#64748b";
+    ctx.font = "9px JetBrains Mono, monospace";
+    ctx.fillText("0", pad.l - 2, h - 14);
+    ctx.fillText(String(Math.round(xMax)), pad.l + iw - 14, h - 14);
+    ctx.fillText(String(Math.round(yMax)), 4, pad.t + 8);
   }
 
   function setOverlayOpacity(v) {
@@ -651,8 +665,8 @@
         if (target && scroller) {
           scroller.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
         }
-        if (id === "sec-crossplot" && crossplot) {
-          setTimeout(function () { crossplot.resize(); }, 200);
+        if (id === "sec-crossplot") {
+          setTimeout(function () { drawCrossplot(samples); }, 200);
         }
       });
     });
@@ -728,6 +742,7 @@
       setTimeout(function () { map.invalidateSize(); }, 150);
       updateKpis(samples);
       drawCrossplot(samples);
+      setTimeout(function () { drawCrossplot(samples); }, 300);
       const mid = samples[0];
       if (mid) {
         const fav = sampleGrid(gridMeta.fav, mid.lat, mid.lon);
