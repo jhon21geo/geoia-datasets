@@ -32,3 +32,10 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+
+  landing_app:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"

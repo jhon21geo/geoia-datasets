@@ -22,7 +22,17 @@ gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8004 --workers
 
 Luego **Rebuild**. En Coolify → Dominios ML → Domains, monta `geoia.site` con el path `/dominios-ml`.
 
-La tarjeta de la landing (Landing App) es otro servicio: hay que añadir el enlace a `/dominios-ml/`.
+Si los logs de Dominios ML son de **nginx** (`nginx/1.31`) y no de gunicorn, Coolify está usando la imagen estática, no este `Dockerfile`. Cambia el build a `Dockerfile` en la raíz y el start command de arriba.
+
+## Landing App
+
+La home de `geoia.site` vive en `landing/`. Incluye la tarjeta **Dominios ML** → `/dominios-ml/`.
+
+1. Repositorio Git: `jhon21geo/geoia-datasets`
+2. Rama: `main`
+3. Base Directory: `landing`
+4. Dockerfile: `Dockerfile` (nginx, puerto **80**)
+5. Rebuild **Landing App** (no Prospectividad App)
 
 ## Prospectividad App
 

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIA · Plataforma de Geociencia Aplicada</title>
+<meta name="description" content="GeoIA: visión artificial en cajas de sondaje, interpretación espectral SWIR y balance de masas geoquímico para modelamiento geológico y geometalúrgico.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121116;
+    --surface:#191a22;
+    --surface-2:#20222c;
+    --line:#2d303c;
+    --text:#eae7df;
+    --text-dim:#a3a6ad;
+    --rust:#d9622a;
+    --rust-dim:#8a4420;
+    --cyan:#3ecfc0;
+    --gold:#e3b34a;
+    --violet:#8b7cf6;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(ellipse 1000px 560px at 12% -8%, rgba(217,98,42,0.16), transparent 62%),
+      radial-gradient(ellipse 800px 560px at 105% 8%, rgba(62,207,192,0.09), transparent 58%),
+      radial-gradient(ellipse 900px 650px at 45% 105%, rgba(227,179,74,0.08), transparent 62%);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Space Grotesk',sans-serif;
+    letter-spacing:-0.01em;
+  }
+  .mono{
+    font-family:'JetBrains Mono',monospace;
+  }
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* subtle background texture: contour-like lines */
+  .noise-bg{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 68px);
+    opacity:0.6;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(11,12,15,0.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 0;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font-size:19px;font-weight:700;
+  }
+  .brand-mark{
+    width:26px;height:26px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--rust);border-radius:6px;
+    color:var(--rust);font-size:13px;font-weight:700;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .brand small{
+    display:block;font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;font-weight:400;color:var(--text-dim);
+    letter-spacing:0.08em;text-transform:uppercase;margin-top:1px;
+  }
+  nav.links{display:flex;gap:34px;font-size:14px;color:var(--text-dim);}
+  nav.links a:hover{color:var(--text);}
+  .nav-cta{
+    font-size:13px;font-family:'JetBrains Mono',monospace;
+    border:1px solid var(--line);padding:8px 14px;border-radius:7px;
+    color:var(--text-dim);
+  }
+  .nav-cta:hover{border-color:var(--rust);color:var(--rust);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;z-index:1;
+    padding:52px 0 40px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--cyan);
+    letter-spacing:0.14em;text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;margin-bottom:16px;
+  }
+  .eyebrow::before{
+    content:'';width:7px;height:7px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 8px var(--cyan);
+  }
+  .hero h1{
+    font-size:clamp(30px,4.4vw,48px);
+    line-height:1.08;font-weight:600;
+    max-width:760px;margin:0 0 14px;
+  }
+  .hero h1 em{
+    font-style:normal;color:var(--rust);
+  }
+  .hero p{
+    font-size:16px;line-height:1.55;color:var(--text-dim);
+    max-width:720px;margin:0 0 24px;
+  }
+  .hero-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .btn-primary{
+    background:var(--rust);color:#0b0c0f;font-weight:600;font-size:14.5px;
+    padding:12px 20px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .15s ease, background .15s ease;
+    border:none;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .btn-primary:hover{background:#e97a41;transform:translateY(-1px);}
+  .btn-ghost{
+    font-size:14px;color:var(--text-dim);padding:12px 6px;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-ghost:hover{color:var(--text);}
+
+  /* signature element: core-log strip */
+  .core-strip-wrap{margin-top:34px;position:relative;}
+  .core-strip-label{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+    display:flex;justify-content:space-between;margin-bottom:8px;letter-spacing:0.04em;
+  }
+  .core-strip{
+    position:relative;height:64px;border-radius:8px;overflow:hidden;
+    border:1px solid var(--line);
+    display:flex;
+  }
+  .core-seg{height:100%;position:relative;flex-shrink:0;}
+  .core-strip .depth-ticks{
+    display:flex;justify-content:space-between;margin-top:7px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#5c606b;
+  }
+  .scanline{
+    position:absolute;top:0;bottom:0;width:2px;
+    background:linear-gradient(180deg, transparent, var(--cyan), transparent);
+    box-shadow:0 0 14px 2px var(--cyan);
+    animation:scan 7s linear infinite;
+    opacity:0.85;
+  }
+  @keyframes scan{
+    0%{left:0%;}
+    100%{left:100%;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .scanline{animation:none;left:40%;}
+  }
+
+  /* ---------- MODULES ---------- */
+  .modules{position:relative;z-index:1;padding:52px 0 24px;}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:16px;}
+  .section-head h2{font-size:25px;font-weight:600;margin:0;}
+  .section-head p{color:var(--text-dim);font-size:14px;margin:6px 0 0;max-width:400px;}
+  .kicker{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);
+    letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;display:block;
+  }
+
+  .card-grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;
+  }
+  @media (max-width:900px){.card-grid{grid-template-columns:1fr;}}
+  @media (min-width:901px){
+    .card-grid > a:last-child{
+      grid-column:1 / -1;
+      width:100%;
+      max-width:calc(50% - 9px);
+      justify-self:center;
+    }
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:28px 26px 26px;
+    display:flex;flex-direction:column;
+    position:relative;
+    transition:border-color .2s ease, transform .2s ease, background .2s ease;
+  }
+  .card:hover{
+    border-color:var(--accent,var(--rust));
+    transform:translateY(-3px);
+    background:var(--surface-2);
+  }
+  .card-index{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+    position:absolute;top:26px;right:26px;
+  }
+  .card-icon{
+    width:34px;height:34px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(11,12,15,0.55);backdrop-filter:blur(3px);
+    border:1px solid rgba(255,255,255,0.12);
+    color:#fff;
+    position:absolute;top:12px;right:12px;z-index:2;
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:0 0 18px;
+    display:flex;flex-direction:column;
+    position:relative;
+    overflow:hidden;
+    transition:border-color .2s ease, transform .2s ease, background .2s ease;
+  }
+  .card:hover{
+    border-color:var(--accent,var(--rust));
+    transform:translateY(-3px);
+    background:var(--surface-2);
+  }
+  .card-media{
+    position:relative;height:132px;overflow:hidden;
+    background:#05060a;
+    border-bottom:1px solid var(--line);
+  }
+  .card-media img{
+    width:100%;height:100%;object-fit:cover;object-position:center;
+    display:block;
+    filter:saturate(1.03);
+    transition:transform .4s ease;
+  }
+  .card:hover .card-media img{transform:scale(1.045);}
+  .card-media.is-light img{object-position:top center;}
+  .card-media::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, transparent 40%, rgba(10,11,14,0.78) 100%);
+  }
+  .media-badge{
+    position:absolute;top:12px;left:12px;z-index:2;
+    display:flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    color:#dfe1e6;background:rgba(11,12,15,0.55);backdrop-filter:blur(3px);
+    padding:5px 9px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);
+  }
+  .media-badge::before{
+    content:'';width:5px;height:5px;border-radius:50%;
+    background:var(--accent,var(--rust));box-shadow:0 0 6px var(--accent,var(--rust));
+  }
+  .card-body{padding:18px 22px 0;display:flex;flex-direction:column;flex-grow:1;position:relative;}
+  .card-index{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+    position:absolute;top:18px;right:22px;
+  }
+  .card h3{font-size:18px;margin:0 0 5px;font-weight:600;}
+  .card .tag{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent,var(--rust));
+    margin-bottom:10px;letter-spacing:0.03em;
+  }
+  .card p{font-size:13.5px;line-height:1.55;color:var(--text-dim);margin:0 0 18px;flex-grow:1;}
+  .card .open{
+    font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+    color:var(--text);padding:12px 0;border-top:1px solid var(--line);
+  }
+  .card .open svg{transition:transform .2s ease;}
+  .card:hover .open svg{transform:translateX(3px);}
+
+  .card.rust{--accent:var(--rust);}
+  .card.cyan{--accent:var(--cyan);}
+  .card.gold{--accent:var(--gold);}
+  .card.violet{--accent:var(--violet);}
+  .card.leaf{--accent:#7fcdbb;}
+  .card-media.is-map{
+    background:
+      radial-gradient(circle at 30% 42%, rgba(201,106,60,.55), transparent 42%),
+      radial-gradient(circle at 70% 60%, rgba(212,168,67,.38), transparent 40%),
+      radial-gradient(circle at 52% 18%, rgba(139,124,246,.28), transparent 36%),
+      linear-gradient(180deg,#1a2a3a,#101820);
+  }
+  .card-media.is-domains{
+    background:
+      radial-gradient(circle at 22% 38%, rgba(127,205,187,.55), transparent 42%),
+      radial-gradient(circle at 72% 58%, rgba(122,1,119,.42), transparent 40%),
+      radial-gradient(circle at 48% 18%, rgba(230,85,13,.38), transparent 36%),
+      linear-gradient(180deg,#141820,#0b0d12);
+  }
+
+  /* ---------- CIFRAS (totales globales) ---------- */
+  .cifras{padding:44px 0;border-bottom:1px solid var(--line);}
+  .cifras-head{margin-bottom:18px;}
+  .cifras-head h2{font-size:22px;font-weight:600;margin:0 0 4px;}
+  .cifras-head p{font-size:13.5px;color:var(--text-dim);margin:0;}
+
+  .cifras-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  }
+  .cifra{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 20px;
+  }
+  .cifra .n{
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(28px,3.4vw,40px);font-weight:500;line-height:1;margin:0 0 8px;
+  }
+  .cifra .l{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);
+  }
+  .cifra.rust .n{color:var(--rust);}
+  .cifra.cyan .n{color:var(--cyan);}
+  .cifra.gold .n{color:var(--gold);}
+  .cifras-empty{font-size:13px;color:var(--text-dim);margin:0;}
+  @media (max-width:720px){
+    .cifras-grid{grid-template-columns:1fr 1fr;}
+  }
+
+  /* ---------- CONTACT / SUGGESTIONS ---------- */
+  .suggest{padding:48px 0;position:relative;z-index:1;}
+  .suggest-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    display:grid;grid-template-columns:1fr 1.3fr;gap:0;overflow:hidden;
+  }
+  @media (max-width:760px){.suggest-card{grid-template-columns:1fr;}}
+  .suggest-text{padding:32px 30px;border-right:1px solid var(--line);}
+  @media (max-width:760px){.suggest-text{border-right:none;border-bottom:1px solid var(--line);}}
+  .suggest-text h2{font-size:22px;font-weight:600;margin:0 0 8px;}
+  .suggest-text p{font-size:13.5px;line-height:1.55;color:var(--text-dim);margin:0 0 18px;}
+  .suggest-email{
+    font-size:13.5px;color:var(--rust);display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--line);padding:9px 14px;border-radius:7px;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .suggest-email:hover{border-color:var(--rust);}
+
+  .suggest-form{padding:32px 30px;display:flex;flex-direction:column;gap:12px;}
+  .suggest-form textarea,
+  .suggest-form input{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:7px;
+    color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:11px 13px;
+    resize:vertical;
+  }
+  .suggest-form textarea{min-height:76px;}
+  .suggest-form textarea:focus,
+  .suggest-form input:focus{outline:none;border-color:var(--rust);}
+  .suggest-form textarea::placeholder,
+  .suggest-form input::placeholder{color:#6a6e78;}
+  .suggest-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .suggest-row input{flex:1;min-width:160px;}
+  .suggest-row .btn-primary{white-space:nowrap;}
+  .suggest-note{font-size:11.5px;color:#6a6e78;margin:0;}
+  @media (max-width:480px){
+    .suggest-row{flex-direction:column;}
+    .suggest-row .btn-primary{justify-content:center;width:100%;}
+  }
+
+
+
+  /* mobile nav */
+  .nav-toggle{display:none;background:none;border:1px solid var(--line);border-radius:7px;width:38px;height:38px;color:var(--text);}
+  @media (max-width:760px){
+    nav.links{
+      position:absolute;top:100%;left:0;right:0;
+      flex-direction:column;gap:0;
+      background:var(--surface);border-bottom:1px solid var(--line);
+      max-height:0;overflow:hidden;transition:max-height .25s ease;
+    }
+    nav.links.open{max-height:220px;}
+    nav.links a{padding:14px 28px;border-top:1px solid var(--line);}
+    .nav-cta{display:none;}
+    .nav-toggle{display:block;}
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{padding:28px 0 32px;position:relative;z-index:1;border-top:1px solid var(--line);}
+  .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+  .footer-brand{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;}
+  .footer-meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
+  .footer-links{display:flex;gap:20px;font-size:13px;color:var(--text-dim);flex-wrap:wrap;}
+  .footer-links a:hover{color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="noise-bg"></div>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="brand-mark">Gi</span>
+      <span>GeoIA<small>Geociencia aplicada</small></span>
+    </div>
+    <nav class="links" id="navLinks">
+      <a href="#modulos">Módulos</a>
+      <a href="#cifras">Cifras</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+    <a class="nav-cta mono" href="#modulos">Entrar a un módulo →</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">geoia.site · sistema en producción</span>
+    <h1>Del testigo de perforación<br>al <em>modelo predictivo</em>.</h1>
+    <p>GeoIA integra visión artificial para cajas de sondaje, interpretación SWIR, balance de masas y delimitación de dominios de alteración con machine learning. Convierte datos de campo en insumos cuantitativos para modelamiento geológico y geometalúrgico.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#modulos">
+        Ver los módulos
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a class="btn-ghost" href="#cifras">Uso acumulado ↓</a>
+    </div>
+
+    <div class="core-strip-wrap">
+      <div class="core-strip-label">
+        <span>TESTIGO · DDH-0010</span>
+        <span>75.00 m — 82.55 m</span>
+      </div>
+      <div class="core-strip" id="coreStrip">
+        <div class="scanline"></div>
+      </div>
+      <div class="depth-ticks">
+        <span>75.0</span><span>76.5</span><span>78.0</span><span>79.5</span><span>81.0</span><span>82.55</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="modules" id="modulos">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="kicker">Módulos activos</span>
+        <h2>Cinco herramientas, un mismo flujo</h2>
+      </div>
+      <p>Cada módulo vive en su propia ruta y comparte el mismo estándar de datos.</p>
+    </div>
+
+    <div class="card-grid">
+
+      <a class="card rust" href="/auto_logueo/">
+        <div class="card-media">
+          <img src="img/card-rqd.jpg" alt="Caja de testigos con detección automática de RQD en GeoIA">
+          <span class="media-badge">Captura real</span>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="9" width="20" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M6 9v6M11 9v6M16 9v6" stroke="currentColor" stroke-width="1.6"/></svg>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="card-index mono">01</span>
+          <div class="tag mono">SONDAJES DIAMANTINOS</div>
+          <h3>Auto Logueo</h3>
+          <p>Visión artificial en fotos de cajas → detección de fracturas, tacos, cálculo automático de RQD y recuperación geotécnica.</p>
+          <span class="open">Abrir módulo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="card cyan" href="/espectral/">
+        <div class="card-media">
+          <img src="img/card-espectral.jpg" alt="Firmas espectrales comparadas en el Visor Espectral de GeoIA">
+          <span class="media-badge">Captura real</span>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 16c2-2 3-8 5-8s2 10 4 10 2-13 4-13 2 11 4 11 2-6 4-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="card-index mono">02</span>
+          <div class="tag mono">ASD · TERRASPEC · 350–2500NM</div>
+          <h3>Visor Espectral</h3>
+          <p>Análisis espectral SWIR (350–2500 nm) comparado con librerías USGS / AusSpec. Identificación automática de alteración (micas, arcillas, cloritas) vía SAM.</p>
+          <span class="open">Abrir módulo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="card gold" href="/balance/">
+        <div class="card-media is-light">
+          <img src="img/card-balance.jpg" alt="Diagrama ternario de balance mineral y zonación de alteración en GeoIA">
+          <span class="media-badge">Captura real</span>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 4L20.5 19H3.5L12 4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="4" r="1.3" fill="currentColor"/><circle cx="20.5" cy="19" r="1.3" fill="currentColor"/><circle cx="3.5" cy="19" r="1.3" fill="currentColor"/><circle cx="13.5" cy="13" r="1.5" fill="currentColor" opacity="0.7"/></svg>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="card-index mono">03</span>
+          <div class="tag mono">BVLS · ÍNDICES MOLECULARES</div>
+          <h3>Balance Mineral</h3>
+          <p>Modelamiento geoquímico vía BVLS y zonación de alteración. Correlación multi-fuente (ensayos + SWIR + litología) en un log continuo.</p>
+          <span class="open">Abrir módulo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="card violet" href="/prospectividad/">
+        <div class="card-media is-map">
+          <span class="media-badge">Nuevo</span>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 18l5-8 4 5 3-4 4 7H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8.5" cy="7" r="1.3" fill="currentColor"/></svg>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="card-index mono">04</span>
+          <div class="tag mono">SENTINEL-2 · DEM · ML</div>
+          <h3>Prospectividad</h3>
+          <p>Mapas de favorabilidad mineral: teledetección, lineamientos del DEM y ponderación / XGBoost. Carga TerraSpec de superficie o sondaje sobre el mismo mapa.</p>
+          <span class="open">Abrir módulo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+
+      <a class="card leaf" href="/dominios-ml/">
+        <div class="card-media is-domains">
+          <span class="media-badge">Nuevo</span>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 19V5h4l2 4 2-4h4v14h-4v-7l-2 3-2-3v7H5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="card-body">
+          <span class="card-index mono">05</span>
+          <div class="tag mono">SWIR · GEOQUÍMICA · RF</div>
+          <h3>Dominios ML</h3>
+          <p>Seis dominios de alteración hidrotermal a partir de scores SWIR y geoquímica. El geólogo firma MOD_ALT; Random Forest extiende la clasificación al resto de la malla.</p>
+          <span class="open">Abrir módulo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<section class="cifras" id="cifras">
+  <div class="wrap">
+    <span class="kicker">GeoIA en cifras</span>
+    <div class="cifras-head">
+      <h2>Uso acumulado</h2>
+      <p>Ingresos a la web y ejecuciones de cada módulo, total histórico.</p>
+    </div>
+    <p class="cifras-empty" id="ctEmpty">Cargando datos del contador…</p>
+    <div class="cifras-grid" id="cifrasGrid" hidden>
+      <div class="cifra">
+        <p class="n" id="nVisits">—</p>
+        <p class="l">Ingresos</p>
+      </div>
+      <div class="cifra rust">
+        <p class="n" id="nRqd">—</p>
+        <p class="l">Auto RQD</p>
+      </div>
+      <div class="cifra cyan">
+        <p class="n" id="nEspectral">—</p>
+        <p class="l">Espectral</p>
+      </div>
+      <div class="cifra gold">
+        <p class="n" id="nBalance">—</p>
+        <p class="l">Balance</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="suggest" id="contacto">
+  <div class="wrap">
+    <div class="suggest-card">
+      <div class="suggest-text">
+        <span class="kicker">Contacto directo</span>
+        <h2>¿Bug, idea o algo que falta?</h2>
+        <p>Escríbeme directo o deja tu sugerencia en el formulario — leo todas.</p>
+        <a class="suggest-email mono" href="mailto:jhonatangeo21@gmail.com">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M2 6l10 7 10-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          jhonatangeo21@gmail.com
+        </a>
+      </div>
+      <form class="suggest-form" id="suggestForm">
+        <textarea id="suggestMsg" placeholder="Tu sugerencia, bug o idea para GeoIA..." required></textarea>
+        <div class="suggest-row">
+          <input type="text" id="suggestName" placeholder="Tu nombre (opcional)">
+          <button type="submit" class="btn-primary">
+            Enviar sugerencia
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p class="suggest-note" id="suggestNote">Se guarda en GeoIA. Si el servidor no responde, se abre tu correo.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-row">
+    <div class="footer-brand">GeoIA</div>
+    <div class="footer-links">
+      <a href="/auto_logueo/">Auto Logueo</a>
+      <a href="/espectral/">Visor Espectral</a>
+      <a href="/balance/">Balance Mineral</a>
+      <a href="/prospectividad/">Prospectividad</a>
+      <a href="/dominios-ml/">Dominios ML</a>
+    </div>
+    <div class="footer-meta">geoia.site</div>
+  </div>
+</footer>
+
+<script>
+  // Build the core-log strip: segments of varying width/tone to suggest rock-type bands
+  (function(){
+    const strip = document.getElementById('coreStrip');
+    const bands = [
+      {w:14,c:'#3a3226'},{w:7,c:'#4a3c28'},{w:22,c:'#332c22'},{w:5,c:'#5c4a2e'},
+      {w:18,c:'#2e2924'},{w:9,c:'#463a29'},{w:15,c:'#352e24'},{w:10,c:'#4a3c28'}
+    ];
+    bands.forEach(b=>{
+      const seg = document.createElement('div');
+      seg.className='core-seg';
+      seg.style.width = b.w + '%';
+      seg.style.background = b.c;
+      seg.style.borderRight = '1px solid rgba(0,0,0,0.35)';
+      strip.appendChild(seg);
+    });
+  })();
+
+  // Mobile nav toggle
+  (function(){
+    const btn = document.getElementById('navToggle');
+    const nav = document.getElementById('navLinks');
+    btn.addEventListener('click', ()=>{
+      const open = nav.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open);
+    });
+    nav.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{
+      nav.classList.remove('open'); btn.setAttribute('aria-expanded','false');
+    }));
+  })();
+
+
+  // Suggestion box: se guarda en el servidor; mailto solo si el API falla.
+  (function(){
+    const form = document.getElementById('suggestForm');
+    if(!form) return;
+    const note = document.getElementById('suggestNote');
+    const btn = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById('suggestMsg').value.trim();
+      const name = document.getElementById('suggestName').value.trim();
+      if(!msg) return;
+      if(btn) btn.disabled = true;
+      try{
+        const r = await fetch('/api/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: msg, name })
+        });
+        if(!r.ok) throw new Error('suggest ' + r.status);
+        form.reset();
+        if(note) note.textContent = 'Gracias — tu sugerencia quedó guardada.';
+      }catch(err){
+        const subject = 'Sugerencia · GeoIA';
+        const body = (name ? `De: ${name}\n\n` : '') + msg;
+        window.location.href = `mailto:jhonatangeo21@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      }finally{
+        if(btn) btn.disabled = false;
+      }
+    });
+  })();
+
+  // Totales globales. El historial diario se guarda solo; el detalle está en /dev-cifras.html.
+  (function(){
+    const emptyMsg = document.getElementById('ctEmpty');
+    const grid = document.getElementById('cifrasGrid');
+    if(!emptyMsg || !grid) return;
+
+    function render(stats){
+      if(!stats || !stats.totals){
+        emptyMsg.textContent = 'El contador aún no tiene datos — vuelve a cargar más tarde.';
+        return;
+      }
+      document.getElementById('nVisits').textContent = stats.totals.visits;
+      document.getElementById('nRqd').textContent = stats.totals.tools.rqd;
+      document.getElementById('nEspectral').textContent = stats.totals.tools.espectral;
+      document.getElementById('nBalance').textContent = stats.totals.tools.balance;
+      emptyMsg.hidden = true;
+      grid.hidden = false;
+    }
+
+    const KEY = 'geoia_visit_counted';
+    const alreadyCounted = sessionStorage.getItem(KEY);
+    const req = alreadyCounted ? fetch('/api/stats') : fetch('/api/visit', { method: 'POST' });
+
+    req
+      .then(r => {
+        if (!r.ok) throw new Error('counter ' + r.status);
+        return r.json();
+      })
+      .then(stats => {
+        sessionStorage.setItem(KEY, '1');
+        render(stats);
+      })
+      .catch(() => {
+        emptyMsg.textContent = 'No se pudo conectar con el contador todavía.';
+      });
+  })();
+</script>
+
+</body>
+</html>
