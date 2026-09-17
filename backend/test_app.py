@@ -20,7 +20,7 @@ def test_index_inlines_css_and_js():
     assert "function mulberry32" in html
     assert 'href="css/style.css"' not in html
     assert 'src="js/map.js"' not in html
-    assert "Seleccionar archivo" not in html or "upload-zone" in html
+    assert r.headers.get("x-geoia-visor") == "datasets"
 
 
 def test_static_assets():
