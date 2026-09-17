@@ -1,0 +1,14 @@
+# Coolify / compose: Landing App
+# Base Directory: landing · Dockerfile: Dockerfile · puerto 80
+services:
+  landing_app:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
