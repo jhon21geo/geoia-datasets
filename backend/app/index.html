@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIA — Prospectividad Minera Perú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a class="home-link" href="/">GeoIA</a>
+      <div class="logo-mark">⛏️</div>
+      <div class="brand-copy">
+        <h1>Prospectividad</h1>
+        <span class="subtitle">favorabilidad mineral — Perú</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="active" data-scroll="sec-capas"><span class="nav-icn">🗺️</span> Mapa y capas</button>
+      <button data-scroll="sec-terraspec"><span class="nav-icn">📡</span> Datos TerraSpec</button>
+      <button data-scroll="sec-resumen"><span class="nav-icn">📊</span> Resumen</button>
+      <button data-scroll="sec-crossplot"><span class="nav-icn">📈</span> Cross-plot</button>
+      <a href="https://geoia.site/" target="_blank" rel="noopener"><span class="nav-icn">🏠</span> Plataforma GeoIA</a>
+    </nav>
+
+    <div class="sidebar-scroll">
+      <section id="sec-capas">
+        <h2>Capas</h2>
+        <label class="layer-row"><input type="checkbox" id="layer-favorability" checked><span class="swatch" style="background:#c96a3c"></span>Favorabilidad (modelo)</label>
+        <label class="layer-row"><input type="checkbox" id="layer-clay"><span class="swatch" style="background:#d4a843"></span>Índice de arcillas</label>
+        <label class="layer-row"><input type="checkbox" id="layer-iron"><span class="swatch" style="background:#e0433c"></span>Óxidos de hierro</label>
+        <label class="layer-row"><input type="checkbox" id="layer-lineaments" checked><span class="swatch" style="background:#4fd1c5"></span>Lineamientos estructurales</label>
+        <label class="layer-row"><input type="checkbox" id="layer-geology" checked><span class="swatch" style="background:#5b7a9d"></span>Geología base (INGEMMET)</label>
+        <label class="layer-row"><input type="checkbox" id="layer-terraspec"><span class="swatch" style="background:#a855f7"></span>Muestras TerraSpec</label>
+      </section>
+
+      <section id="sec-terraspec">
+        <h2>Datos TerraSpec (superficie / sondaje)</h2>
+        <div class="terraspec-toggle-row">
+          <div class="ts-toggle active" data-mode="all">Todos</div>
+          <div class="ts-toggle" data-mode="surface">Superficie</div>
+          <div class="ts-toggle" data-mode="drillhole">Sondaje</div>
+        </div>
+        <label class="upload-zone" id="upload-zone">
+          <input type="file" id="ts-file-input" accept=".csv">
+          <div class="icon">📡</div>
+          <div class="hint"><b>Cargar CSV TerraSpec</b><br>ASD/Terraspec de superficie o sondaje</div>
+        </label>
+        <div class="ts-status" id="ts-status">Ningún archivo cargado todavía.</div>
+        <div class="ts-legend" id="ts-legend"></div>
+        <button class="ts-clear" id="ts-clear" type="button" style="display:none;">Quitar capa TerraSpec</button>
+      </section>
+
+      <section>
+        <h2>Opacidad de favorabilidad</h2>
+        <div class="opacity-row">
+          <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="0.75">
+          <span id="opacity-val">0.75</span>
+        </div>
+        <div class="legend" style="margin-top:0.7rem;"></div>
+        <div class="legend-labels"><span>baja</span><span>favorabilidad</span><span>alta</span></div>
+      </section>
+
+      <section id="sec-resumen">
+        <h2>Resumen del área</h2>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="val" id="kpi-samples">—</div><div class="lbl">muestras INGEMMET</div></div>
+          <div class="stat-card"><div class="val" id="kpi-lineaments">312</div><div class="lbl">lineamientos</div></div>
+          <div class="stat-card"><div class="val">0.81</div><div class="lbl">AUC modelo</div></div>
+          <div class="stat-card"><div class="val">EPSG:32718</div><div class="lbl">CRS de trabajo</div></div>
+        </div>
+      </section>
+
+      <section id="sec-crossplot">
+        <h2>Cross-plot (muestras)</h2>
+        <div class="crossplot-wrap">
+          <canvas id="crossplot" width="240" height="200"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div class="sidebar-footer">
+      <h2>Comentarios para el desarrollador<br>(sugerencias de mejora)</h2>
+      <textarea class="comment-box" id="comment-box" placeholder="Ej: sería útil exportar el ráster de favorabilidad como GeoTIFF..."></textarea>
+      <button class="send-btn" id="send-btn" type="button">Enviar</button>
+      <span class="fb-msg" id="fb-msg"></span>
+      <div class="project-meta">
+        <div><b>Proyecto:</b> Prospectividad_Peru</div>
+        <div>INGEMMET superficie + IDW · Sentinel-2 + DEM + XGBoost (demo)</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="page-head topbar">
+      <div>
+        <p class="page-kicker">Réplica web del módulo de prospectividad, con el mismo criterio visual de GeoIA</p>
+        <div class="brand">
+          <h1>Prospectividad — favorabilidad mineral desde superficie</h1>
+        </div>
+        <p class="page-lead">
+          Mapa de favorabilidad interpolado (IDW) sobre geoquímica INGEMMET de este repositorio:
+          Cu, Au, Fe y As. Carga un CSV TerraSpec con columnas <b>lat/lon</b> o <b>x/y</b> (UTM 18S)
+          para superponer alteración SWIR sobre el mismo visor.
+        </p>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Menú">☰</button>
+        <span class="badge-preview">DEMO · conectar API real</span>
+      </div>
+    </header>
+
+    <div class="kpi-row">
+      <div class="kpi g1"><div class="n" id="kpi-samples-main">372</div><div class="l">muestras superficiales</div></div>
+      <div class="kpi g2"><div class="n">312</div><div class="l">lineamientos (modelo)</div></div>
+      <div class="kpi g3"><div class="n">0.81</div><div class="l">AUC del modelo</div></div>
+      <div class="kpi g4"><div class="n">4.2 km²</div><div class="l">celda máx. favorab.</div></div>
+    </div>
+
+    <div class="workspace layout">
+      <div class="map-card">
+        <div id="map"></div>
+        <div class="panel-bottom">
+          <h3>Punto seleccionado</h3>
+          <div class="mono-block" style="font-family:'JetBrains Mono',monospace; font-size:0.78rem; line-height:1.7; color:var(--main-text-dim);">
+            lat: <span id="sel-lat" style="color:var(--main-text)">—</span><br>
+            lon: <span id="sel-lon" style="color:var(--main-text)">—</span><br>
+            favorabilidad: <span id="sel-fav" style="color:#c96a3c; font-weight:600;">—</span><br>
+            arcillas: <span id="sel-clay" style="color:#b8860b; font-weight:600;">—</span><br>
+            dist. estructura: <span id="sel-dist" style="color:#0891b2; font-weight:600;">—</span>
+          </div>
+        </div>
+        <div class="map-note">
+          Overlay de favorabilidad interpolado sobre muestras INGEMMET (Cordillera Oriental, Junín).<br>
+          Lineamientos sintéticos para ilustrar el estilo estructural. Clic en el mapa para consultar un punto.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+<script src="js/map.js"></script>
+</body>
+</html>
