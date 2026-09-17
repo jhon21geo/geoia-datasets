@@ -143,10 +143,18 @@
     attributionControl: true,
   }).setView(CENTER, 8);
 
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
+  // Carto light_all pinta "API KEY REQUIRED". Esri Canvas no pide clave.
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 16,
+      attribution: "Tiles &copy; Esri",
+    }
+  ).addTo(map);
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 16 }
+  ).addTo(map);
 
   const layers = {
     fav: L.layerGroup(),
