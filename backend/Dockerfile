@@ -18,5 +18,5 @@ RUN mkdir -p /app/data/raw /app/data/processed /app/data/models
 
 EXPOSE 8003
 
-# Coolify usa STREAMLIT_SERVER_PORT=8003 aunque el proceso es uvicorn.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${STREAMLIT_SERVER_PORT:-8003} --root-path ${ROOT_PATH:-/prospectividad}"]
+# Coolify arranca gunicorn (no uvicorn a pelo). Sin --root-path: nginx ya quita /prospectividad.
+CMD ["sh", "-c", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${STREAMLIT_SERVER_PORT:-8003} --workers ${WEB_CONCURRENCY:-2} --timeout 120"]

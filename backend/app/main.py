@@ -45,6 +45,18 @@ def _inlined_index() -> str:
     return html
 
 
+@app.on_event("startup")
+def _startup():
+    print("GeoIA visor: HTML en GET / (css+js inline)", flush=True)
+
+
+def _index_response() -> HTMLResponse:
+    return HTMLResponse(
+        _inlined_index(),
+        headers={"X-GeoIA-Visor": "datasets", "Cache-Control": "no-store"},
+    )
+
+
 @app.get("/health")
 @app.head("/health")
 def health():
@@ -54,7 +66,12 @@ def health():
 @app.get("/")
 @app.head("/")
 def index():
-    return HTMLResponse(_inlined_index())
+    return _index_response()
+
+
+@app.get("/index.html")
+def index_html():
+    return _index_response()
 
 
 @app.get("/css/style.css")
