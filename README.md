@@ -2,29 +2,30 @@
 
 Datos de GeoIA y visor de **prospectividad** para Coolify.
 
-## Error de Coolify: `COPY app ./app` → `"/app": not found`
+## Error `COPY app ./app` → `"/app": not found`
 
-El `backend/Dockerfile` original (imagen `ghcr.io/osgeo/gdal:ubuntu-small-3.9.0`) hace:
+Coolify construye con `backend/Dockerfile`. Esa instrucción toma `app/` **desde el contexto de build**, no desde donde está el Dockerfile.
 
-```
-COPY requirements.txt .
-COPY app ./app
-```
+- Si el contexto es la raíz del repo → hace falta `./app`
+- Si el Base Directory / contexto es `backend` → hace falta `./backend/app`
 
-El contexto de build es la **raíz del repo**. Sin la carpeta `app/` y sin `requirements.txt` en la raíz, el build se cancela.
-
-Este repo ahora incluye exactamente eso:
+Este repo tiene **las dos**:
 
 ```
+app/                 # contexto = raíz
+backend/app/         # contexto = carpeta backend
 requirements.txt
-app/main.py
-app/index.html
-app/css/style.css
-app/js/map.js
-app/data/ingemmet_superficie.geojson
-backend/Dockerfile
+backend/requirements.txt
+backend/Dockerfile   # COPY requirements.txt .  y  COPY app ./app
 ```
 
-`GET /` incrusta CSS y JS en el HTML, así el visor no queda en crudo aunque fallen rutas estáticas.
+En Coolify (Prospectividad App):
 
-En Coolify: Git `jhon21geo/geoia-datasets`, Dockerfile `backend/Dockerfile`, puerto `8003`, path `/prospectividad`. Luego redesplegar.
+1. Repositorio Git: `jhon21geo/geoia-datasets`
+2. Rama: `main` (no un commit viejo)
+3. Base Directory: vacío, **o** `backend` (las dos valen ahora)
+4. Dockerfile: `backend/Dockerfile` si la base es la raíz; `Dockerfile` si la base es `backend`
+5. Puerto: `8003`
+6. Start command: `uvicorn app.main:app --host 0.0.0.0 --port 8003 --root-path /prospectividad`
+
+Luego **Rebuild** (no solo Restart).
