@@ -708,13 +708,25 @@
   bindTerraSpec();
   bindComments();
 
-  const dataUrl = new URL("data/ingemmet_superficie.geojson", document.baseURI).toString();
+  function fetchGeojson() {
+    const urls = [
+      new URL("data/ingemmet_superficie.geojson", document.baseURI).toString(),
+      "/prospectividad/data/ingemmet_superficie.geojson",
+      "https://raw.githubusercontent.com/jhon21geo/geoia-datasets/main/prospectividad/data/ingemmet_superficie.geojson",
+    ];
+    var chain = Promise.reject(new Error("start"));
+    urls.forEach(function (url) {
+      chain = chain.catch(function () {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error("geojson " + r.status);
+          return r.json();
+        });
+      });
+    });
+    return chain;
+  }
 
-  fetch(dataUrl)
-    .then(function (r) {
-      if (!r.ok) throw new Error("geojson " + r.status);
-      return r.json();
-    })
+  fetchGeojson()
     .then(function (gj) {
       samples = (gj.features || []).map(function (f) {
         const c = f.geometry.coordinates;
