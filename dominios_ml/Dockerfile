@@ -9,12 +9,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-COPY dominios_ml/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY dominios_ml /app
+COPY . /app
 
 EXPOSE 8004
 
-# Coolify usa STREAMLIT_SERVER_PORT aunque el proceso es gunicorn + uvicorn.
 CMD ["sh", "-c", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${STREAMLIT_SERVER_PORT:-8004} --workers ${WEB_CONCURRENCY:-1} --timeout 180"]

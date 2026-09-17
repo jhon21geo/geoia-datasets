@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoIA — Dominios ML</title>
+<meta name="description" content="Delimitación de dominios de alteración hidrotermal con SWIR, geoquímica y machine learning.">
+<script>
+(function () {
+  var path = location.pathname;
+  var base = path.endsWith("/") ? path : path.replace(/[^/]+$/, "");
+  if (!base.endsWith("/")) base += "/";
+  var el = document.createElement("base");
+  el.href = base;
+  document.head.appendChild(el);
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a class="home-link" href="https://geoia.site/">GeoIA</a>
+      <div class="logo-mark">⬡</div>
+      <div class="brand-copy">
+        <h1>Dominios ML</h1>
+        <span class="subtitle">alteración · SWIR · geoquímica</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="nav">
+      <button class="active" data-page="resumen"><span class="nav-icn">◉</span> Resumen</button>
+      <button data-page="datos"><span class="nav-icn">▣</span> Datos</button>
+      <button data-page="visual"><span class="nav-icn">⧉</span> Programación visual</button>
+      <button data-page="fase1"><span class="nav-icn">1</span> Fase 1 · No supervisado</button>
+      <button data-page="fase2"><span class="nav-icn">2</span> Fase 2 · El geólogo</button>
+      <button data-page="fase3"><span class="nav-icn">3</span> Fase 3 · Supervisado</button>
+      <button data-page="acerca"><span class="nav-icn">ⓘ</span> Acerca de</button>
+      <a href="https://geoia.site/" rel="noopener"><span class="nav-icn">⌂</span> Plataforma GeoIA</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span class="mono">sintético · semilla 42</span>
+      <span class="mono">6 dominios · k=5</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="page-kicker">Metodología abierta</p>
+        <h2 id="page-title">Resumen</h2>
+      </div>
+      <a class="chip" href="https://jhon21geo.github.io/geologia-ML-dominios-alteracion/" target="_blank" rel="noopener">Tesis en línea →</a>
+    </header>
+
+    <section class="page active" id="page-resumen">
+      <div class="kpi-grid" id="kpis">
+        <article class="kpi rust"><p class="n" id="kpi-n">—</p><p class="l">Intervalos</p></article>
+        <article class="kpi cyan"><p class="n" id="kpi-holes">—</p><p class="l">Sondajes</p></article>
+        <article class="kpi gold"><p class="n" id="kpi-labeled">—</p><p class="l">Etiquetados</p></article>
+        <article class="kpi violet"><p class="n" id="kpi-unlabeled">—</p><p class="l">Por predecir</p></article>
+      </div>
+
+      <p class="lead">El cuello de botella no es adquirir espectro y química, sino integrarlos. El algoritmo propone clústeres SWIR; el geólogo firma el dominio <span class="mono">MOD_ALT</span>; Random Forest extiende esa firma al resto de la malla.</p>
+
+      <div class="pills" id="domain-pills"></div>
+
+      <h3>Esquema metodológico</h3>
+      <div class="flow">
+        <div class="flow-box">Espectro SWIR/VNIR</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">No supervisado<br><small>PCA · K-Means</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box accent">Geólogo firma<br><small>MOD_ALT</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">Supervisado<br><small>RF · kNN · MLP · SVM</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">Predicción 3D</div>
+      </div>
+      <p class="caption">Figura 1. El clúster espectral no equivale al dominio geológico. El geólogo recorta, fusiona o descarta intervalos antes del entrenamiento supervisado.</p>
+
+      <div class="split">
+        <div class="panel">
+          <h3>Qué ves aquí</h3>
+          <p>Réplica en producción del flujo de la tesis sobre un <b>depósito sintético</b> (mismas asociaciones mineralógicas y proporciones, sin geometría de la unidad original).</p>
+          <ul>
+            <li>13 scores SWIR + hematita/goethita VNIR</li>
+            <li>34 elementos multielementales (completitud ≥ 80 %)</li>
+            <li>Seis dominios: Arg, ArgAvd, Fil, Oxd, Pro, Sk</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Distribución de dominios</h3>
+          <div id="chart-domains" class="chart"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-datos">
+      <div class="split">
+        <div class="panel">
+          <h3>Tabla de dominios</h3>
+          <table class="grid-table" id="domain-table">
+            <thead><tr><th>Código</th><th>Dominio</th><th>n</th><th>Ensamble diagnóstico</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Scores minerales medios</h3>
+          <div id="chart-minerals" class="chart tall"></div>
+        </div>
+      </div>
+      <p class="caption">Datos: <span class="mono">data/synthetic/synthetic_merged.csv</span> · 13 minerales SWIR de la Tabla 15. No son sondajes de un yacimiento real.</p>
+    </section>
+
+    <section class="page" id="page-visual">
+      <p class="lead">La tesis se ejecutó en <b>Orange 3</b> (lienzo de widgets, sin escribir código). Este visor reproduce las mismas etapas en scikit-learn para geoia.site.</p>
+      <div class="orange-flow">
+        <div class="ow">File</div><span>→</span>
+        <div class="ow">Select Columns</div><span>→</span>
+        <div class="ow">Preprocess</div><span>→</span>
+        <div class="ow">PCA</div><span>→</span>
+        <div class="ow">k-Means</div><span>→</span>
+        <div class="ow">Data Sampler</div><span>→</span>
+        <div class="ow accent">Random Forest</div>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <h3>Orange (como en la tesis)</h3>
+          <p>Instala Orange, carga el CSV sintético y conecta File → Preprocess → PCA / Hierarchical Clustering / k-Means, luego Test and Score con RF, kNN, Neural Network y SVM.</p>
+          <a class="btn" href="https://jhon21geo.github.io/geologia-ML-dominios-alteracion/09-orange-colab/" target="_blank" rel="noopener">Recetario del lienzo →</a>
+        </div>
+        <div class="panel">
+          <h3>Google Colab</h3>
+          <p>Un clic, cuenta de Google, <span class="mono">Entorno de ejecución → Ejecutar todo</span>. Ves el ranking RF / red / k-NN / SVM sobre el mismo sintético.</p>
+          <a class="btn ghost" id="colab-link" href="https://colab.research.google.com/github/jhon21geo/geologia-ML-dominios-alteracion/blob/main/notebooks/00_colab_pipeline.ipynb" target="_blank" rel="noopener">Abrir cuaderno →</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-fase1">
+      <p class="lead">PCA, dendrograma y K-Means (<span class="mono">k = 5</span>) corren <b>sobre espectro</b>, no sobre química. Silhouette y varianza se calculan al arrancar el servicio.</p>
+      <div class="kpi-grid mini">
+        <article class="kpi"><p class="n" id="kpi-sil">—</p><p class="l">Silhouette K-Means</p></article>
+        <article class="kpi"><p class="n" id="kpi-var">—</p><p class="l">Varianza PC1+PC2</p></article>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <h3>PCA coloreada por dominio</h3>
+          <div id="chart-pca-domain" class="chart tall"></div>
+        </div>
+        <div class="panel">
+          <h3>PCA coloreada por K-Means</h3>
+          <div id="chart-pca-kmeans" class="chart tall"></div>
+        </div>
+      </div>
+      <p class="caption">Misma nube, distinta semántica. El paso siguiente no es “aceptar k”: es firmar el ensamble.</p>
+    </section>
+
+    <section class="page" id="page-fase2">
+      <p class="lead">Un clúster puede partirse en dos dominios, o dos clústeres fusionarse. El algoritmo propone; <b>no etiqueta solo</b>.</p>
+      <div class="cards-6" id="rule-cards"></div>
+      <div class="split">
+        <div class="panel">
+          <h3>Planta XY</h3>
+          <div id="chart-map" class="chart tall"></div>
+        </div>
+        <div class="panel">
+          <h3>Sección Y–Z</h3>
+          <div id="chart-section" class="chart tall"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Tira de sondaje · clúster vs dominio</h3>
+        <label class="hole-pick">Sondaje
+          <select id="hole-select"></select>
+        </label>
+        <div id="chart-hole" class="chart"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-fase3">
+      <p class="lead">80 % / 20 % estratificado sobre tramos etiquetados. Comparación RF, k-NN, MLP y SVM <b>sobre geoquímica</b>. Las coordenadas no entran al clasificador.</p>
+      <button class="btn" id="train-btn" type="button">Entrenar y comparar modelos</button>
+      <p class="status" id="train-status">Aún no se ha entrenado en esta sesión.</p>
+      <div class="split">
+        <div class="panel">
+          <h3>Ranking</h3>
+          <table class="grid-table" id="rank-table">
+            <thead><tr><th>Modelo</th><th>F1</th><th>AUC</th><th>Recall</th><th>Precision</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Matriz de confusión (mejor modelo)</h3>
+          <div id="chart-confusion" class="chart tall"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-acerca">
+      <div class="panel">
+        <h3>Cómo citar</h3>
+        <p>Mallma Espinoza, J. P. (2026). <i>Delimitación de los dominios geológicos de alteración desde firmas espectrales y geoquímica mediante el empleo de machine learning</i> [Tesis de pregrado, Universidad Nacional de Ingeniería].</p>
+        <p>Asesor: MSc. César Augusto Mendoza Tarazona · FIGMM · UNI · Lima, 2026.</p>
+        <p class="links">
+          <a href="https://jhon21geo.github.io/geologia-ML-dominios-alteracion/" target="_blank" rel="noopener">Visor académico</a>
+          <a href="https://github.com/jhon21geo/geologia-ML-dominios-alteracion" target="_blank" rel="noopener">Código abierto</a>
+          <a href="mailto:jhonatangeo21@gmail.com">jhonatangeo21@gmail.com</a>
+        </p>
+        <p class="caption">Los datos de este módulo son sintéticos. No se publican datos de operaciones. MIT.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
