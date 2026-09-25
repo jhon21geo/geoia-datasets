@@ -18,3 +18,9 @@ Intervalos de sondajes sintéticos:
 - `DDH_alte.csv` — alteración e intensidad
 - `DDH_assay.csv` — geoquímica
 - `DDH_terraspec.csv` — minerales TerraSpec
+
+## 4. Auto logueo
+
+Foto de referencia para ejecutar el módulo de auto logueo. El nombre sigue `HoleID_desde_hasta.jpg`.
+
+- `UCH26-0230_94.50_100.00.jpg` — Uchucchacua, sondaje UCH26-0230, cajas 31–32, de 94.50 m a 100.00 m
